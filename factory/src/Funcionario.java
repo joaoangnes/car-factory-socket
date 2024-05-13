@@ -15,10 +15,11 @@ class Funcionario implements Runnable {
   private final Semaphore estoquePecas; // Semáforo para controlar o acesso ao estoque de peças
   private final Random random; // Gerador de números aleatórios
   private final FileWriter logFile; // Arquivo de log para registrar as ações
-  private final Semaphore[] ferramentas; // Semáforos para controlar o acesso às ferramentas
+  private final Semaphore ferramentaEsquerda; // Semáforo para controlar o acesso à ferramenta da esquerda
+  private final Semaphore ferramentaDireita; // Semáforo para controlar o acesso à ferramenta da direita
 
   // Construtor do funcionário
-  public Funcionario(int estacaoId, int funcionarioId, EsteiraFabrica esteira, Semaphore estoquePecas, Random random, FileWriter logFile) {
+  public Funcionario(int estacaoId, int funcionarioId, EsteiraFabrica esteira, Semaphore estoquePecas, Semaphore ferramentaEsquerda, Semaphore ferramentaDireita, Random random, FileWriter logFile) {
     // Inicialização das variáveis
     this.estacaoId = estacaoId;
     this.funcionarioId = funcionarioId;
@@ -26,10 +27,8 @@ class Funcionario implements Runnable {
     this.estoquePecas = estoquePecas;
     this.random = random;
     this.logFile = logFile;
-    this.ferramentas = new Semaphore[2];
-    for (int i = 0; i < 2; i++) {
-      this.ferramentas[i] = new Semaphore(1); // Cada ferramenta é inicializada como disponível (1)
-    }
+    this.ferramentaEsquerda = ferramentaEsquerda;
+    this.ferramentaDireita = ferramentaDireita;
   }
 
   // Método que define o que o funcionário faz quando sua thread é iniciada
@@ -37,28 +36,23 @@ class Funcionario implements Runnable {
 public void run() {
   try {
     while (true) {
-      int firstToolIndex = 0;
-      int secondToolIndex = 1;
-
-      // Se for o último funcionário, inverte a ordem de coleta das ferramentas
-      if (funcionarioId == 5 ) {
-        firstToolIndex = 1;
-        secondToolIndex = 0;
+      if (funcionarioId < 5) {
+        ferramentaEsquerda.acquire();
+        ferramentaDireita.acquire();
+      } else {
+        ferramentaDireita.acquire();
+        ferramentaEsquerda.acquire();
       }
-
-      // Pegar as duas ferramentas necessárias
-      ferramentas[firstToolIndex].acquire();
-      ferramentas[secondToolIndex].acquire();
 
       // Simular o trabalho
       Thread.sleep((long) (Math.random() * 1000));
+      Veiculo veiculo = produzirVeiculo();
 
       // Liberar as ferramentas
-      ferramentas[firstToolIndex].release();
-      ferramentas[secondToolIndex].release();
+      ferramentaEsquerda.release();
+      ferramentaDireita.release();
 
       // Produzir um veículo e colocá-lo na esteira
-      Veiculo veiculo = produzirVeiculo();
       log("[PRODUÇÃO] - Veículo produzido (ID: " + veiculo.getId() + ", Cor: " + veiculo.getCor() +
       ", Tipo: " + veiculo.getTipo() + ", Estação: " + veiculo.getEstacaoId() +
       ", Funcionário: " + veiculo.getFuncionarioId() + ") - Posições restantes: " + esteira.getPosicoesRestantes());

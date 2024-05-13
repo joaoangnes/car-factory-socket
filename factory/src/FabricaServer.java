@@ -14,16 +14,19 @@ public class FabricaServer {
         fabrica.iniciarProducao();
 
         ExecutorService executorService = Executors.newFixedThreadPool(3);
-        ServerSocket serverSocket = new ServerSocket(PORT);
 
         System.out.println("Server is listening on port " + PORT);
 
-        while (true) {
-            Socket socket = serverSocket.accept();
-            System.out.println("New store connected");
+        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
+            while (true) {
+                Socket socket = serverSocket.accept();
+                System.out.println("New store connected");
 
-            FabricaHandler fabricaHandler = new FabricaHandler(socket, fabrica);
-            executorService.execute(fabricaHandler);
+                FabricaHandler fabricaHandler = new FabricaHandler(socket, fabrica);
+                executorService.execute(fabricaHandler);
+            }
+        } catch (IOException e) {
+            System.out.println("Error in server: " + e.getMessage());
         }
     }
 }

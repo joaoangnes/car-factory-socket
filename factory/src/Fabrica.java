@@ -14,6 +14,7 @@ public class Fabrica {
     private final FileWriter logFile; // Arquivo de log para registrar as ações
     private final FileWriter vendaLogFile; // Arquivo de log para registrar as vendas
 
+    private final Semaphore[] ferramentas;
     private final EsteiraFabrica esteira; // Esteira onde os veículos produzidos são colocados
 
     // Constantes para definir o número de estações, funcionários por estação, tamanho da esteira e estoque inicial de peças
@@ -31,15 +32,20 @@ public class Fabrica {
         this.esteira = new EsteiraFabrica(TAMANHO_ESTEIRA, logFile);
         this.estoquePecas = new Semaphore(ESTOQUE_INICIAL_PECAS);
         this.random = new Random();
+
+        this.ferramentas = new Semaphore[FUNCIONARIOS_POR_ESTACAO];
     }
 
     // Método para iniciar a produção na fábrica
     public void iniciarProducao() {
         // Criação de threads para cada funcionário em cada estação
         for (int i = 0; i < NUM_ESTACOES; i++) {
+            for (int f = 0; f < FUNCIONARIOS_POR_ESTACAO; f++) {
+                ferramentas[f] = new Semaphore(1);
+            }
             for (int j = 0; j < FUNCIONARIOS_POR_ESTACAO; j++) {
                 // Criação de um novo funcionário e sua thread
-                Funcionario funcionario = new Funcionario(i + 1, j + 1, esteira, estoquePecas, random, logFile);
+                Funcionario funcionario = new Funcionario(i + 1, j + 1, esteira, estoquePecas, ferramentas[j], ferramentas[(j + 1) % FUNCIONARIOS_POR_ESTACAO], random, logFile);
                 Thread funcionarioThread = new Thread(funcionario, "Funcionário " + (j + 1) + " - Estação " + (i + 1));
                 // Início da thread do funcionário
                 funcionarioThread.start();
